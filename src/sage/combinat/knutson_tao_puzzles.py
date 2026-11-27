@@ -1486,9 +1486,9 @@ class PuzzleFilling:
 
         REFERENCES:
 
-        .. [Purbhoo07] K. Purbhoo, Puzzles, Tableaux and Mosaics, :arxiv:`0705.1184`
+        - [Purbhoo07]_
 
-        .. [Vakil03] R. Vakil, A geometric Littlewood-Richardson rule, :arxiv:`0302294`
+        - [Vakil03]_
 
         OUTPUT:
 
@@ -1547,7 +1547,7 @@ class PuzzleFilling:
 
         REFERENCES:
 
-        .. [Purbhoo07] K. Purbhoo, Puzzles, Tableaux and Mosaics, :arxiv:`0705.1184`
+        - [Purbhoo07]_
 
         INPUT:
 
