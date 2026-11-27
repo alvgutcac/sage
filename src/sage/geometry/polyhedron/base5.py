@@ -325,7 +325,7 @@ class Polyhedron_base5(Polyhedron_base4):
 
         TESTS:
 
-            sage: polytopes.regular_polygon(4)._test_pyramid()                          # needs sage.rings.number_field
+            sage: polytopes.regular_polygon(4)._test_pyramid()
         """
         if tester is None:
             tester = self._tester(**options)
@@ -703,7 +703,7 @@ class Polyhedron_base5(Polyhedron_base4):
 
         .. SEEALSO::
 
-            :meth:`~sage.schemes.toric.variety.Kaehler_cone`
+            :meth:`~sage.schemes.toric.variety.ToricVariety_field.Kaehler_cone`
 
         REFERENCES:
 
@@ -781,8 +781,7 @@ class Polyhedron_base5(Polyhedron_base4):
             new_rays = self.rays() + other.rays()
             new_lines = self.lines() + other.lines()
             return self.parent().element_class(self.parent(), [new_vertices, new_rays, new_lines], None)
-        else:
-            return self.parent().element_class(self.parent(), None, None)
+        return self.parent().element_class(self.parent(), None, None)
 
     _add_ = minkowski_sum
 
@@ -1120,7 +1119,7 @@ class Polyhedron_base5(Polyhedron_base4):
 
             sage: C = polytopes.hypercube(5)
             sage: S = Polyhedron([[1]])
-            sage: C.join(S).is_combinatorially_isomorphic(C.pyramid())                  # needs sage.graphs
+            sage: C.join(S).is_combinatorially_isomorphic(C.pyramid())
             True
 
             sage: P = polytopes.simplex(backend='cdd')
@@ -1414,7 +1413,6 @@ class Polyhedron_base5(Polyhedron_base4):
 
         Check that :issue:`19012` is fixed::
 
-            sage: # needs sage.rings.number_field
             sage: K.<a> = QuadraticField(5)
             sage: P = Polyhedron([[0, 0], [0, a], [1, 1]])
             sage: Q = Polyhedron(ieqs=[[-1, a, 1]])
@@ -1436,8 +1434,7 @@ class Polyhedron_base5(Polyhedron_base4):
             if self.base_ring() is ZZ:
                 parent = parent.base_extend(QQ)
                 return parent.element_class(parent, None, [new_ieqs, new_eqns])
-            else:
-                raise TypeError(msg)
+            raise TypeError(msg)
 
     __and__ = intersection
 
@@ -1452,10 +1449,13 @@ class Polyhedron_base5(Polyhedron_base4):
         INPUT:
 
         - ``actor`` -- one of the following:
-          - a scalar, not necessarily in :meth:`base_ring`,
+
+          - a scalar, not necessarily in
+            :meth:`~sage.geometry.polyhedron.base0.Polyhedron_base0.base_ring`,
           - a :class:`Polyhedron`,
           - a :class:`sage.modules.free_module_element.vector`,
           - a :class:`sage.matrix.constructor.matrix`,
+
         - ``self_on_right`` -- must be ``False`` for actor a matrix;
           ignored otherwise
 
@@ -1500,9 +1500,9 @@ class Polyhedron_base5(Polyhedron_base4):
         """
         if isinstance(actor, Polyhedron_base5):
             return self.product(actor)
-        elif isinstance(actor, Vector):
+        if isinstance(actor, Vector):
             return self.translation(actor)
-        elif isinstance(actor, Matrix):
+        if isinstance(actor, Matrix):
             if self_on_left:
                 raise ValueError("matrices should act on the left")
             else:
@@ -1520,6 +1520,8 @@ class Polyhedron_base5(Polyhedron_base4):
           coordinates that determines a displacement vector
 
         OUTPUT: the translated polyhedron
+
+        .. SEEALSO:: :meth:`linear_transformation`, :meth:`dilation`
 
         EXAMPLES::
 
@@ -1599,12 +1601,15 @@ class Polyhedron_base5(Polyhedron_base4):
 
         INPUT:
 
-        - ``scalar`` -- a scalar, not necessarily in :meth:`base_ring`
+        - ``scalar`` -- a scalar, not necessarily in
+          :meth:`~sage.geometry.polyhedron.base0.Polyhedron_base0.base_ring`
 
         OUTPUT:
 
         The polyhedron dilated by that scalar, possibly coerced to a
         bigger base ring.
+
+        .. SEEALSO:: :meth:`linear_transformation`, :meth:`translation`
 
         EXAMPLES::
 
@@ -1747,13 +1752,15 @@ class Polyhedron_base5(Polyhedron_base4):
                     p = self.change_ring(new_ring)
                     tester.assertIsInstance(scalar*p, Polyhedron_base)
 
-    def linear_transformation(self, linear_transf, new_base_ring=None):
+    def linear_transformation(self, linear_transf,
+                              new_base_ring=None):
         """
         Return the linear transformation of ``self``.
 
         INPUT:
 
-        - ``linear_transf`` -- a matrix, not necessarily in :meth:`base_ring`
+        - ``linear_transf`` -- a matrix, not necessarily in
+          :meth:`~sage.geometry.polyhedron.base0.Polyhedron_base0.base_ring`
         - ``new_base_ring`` -- ring (optional); specify the new base ring;
           may avoid coercion failure
 
@@ -1761,6 +1768,8 @@ class Polyhedron_base5(Polyhedron_base4):
 
         The polyhedron transformed by that matrix, possibly coerced to a
         bigger base ring.
+
+        .. SEEALSO:: :meth:`dilation`, :meth:`translation`
 
         EXAMPLES::
 
@@ -1770,7 +1779,6 @@ class Polyhedron_base5(Polyhedron_base4):
             sage: b3_proj = proj_mat * b3; b3_proj
             A 3-dimensional polyhedron in ZZ^4 defined as the convex hull of 5 vertices
 
-            sage: # needs sage.rings.number_field
             sage: square = polytopes.regular_polygon(4)
             sage: square.vertices_list()
             [[0, -1], [1, 0], [-1, 0], [0, 1]]
@@ -1783,7 +1791,6 @@ class Polyhedron_base5(Polyhedron_base4):
 
         Specifying the new base ring may avoid coercion failure::
 
-            sage: # needs sage.rings.number_field
             sage: K.<sqrt2> = QuadraticField(2)
             sage: L.<sqrt3> = QuadraticField(3)
             sage: P = polytopes.cube()*sqrt2
@@ -1796,7 +1803,7 @@ class Polyhedron_base5(Polyhedron_base4):
 
         Linear transformation without specified new base ring fails in this case::
 
-            sage: M*P                                                                   # needs sage.rings.number_field
+            sage: M*P
             Traceback (most recent call last):
             ...
             TypeError: unsupported operand parent(s) for *:
@@ -1806,6 +1813,15 @@ class Polyhedron_base5(Polyhedron_base4):
             with defining polynomial x^2 - 2 with sqrt2 = 1.414213562373095?'
 
         TESTS:
+
+        One can scale by a scalar as follows::
+
+            sage: P = polytopes.cube()
+            sage: P2 = P.linear_transformation(2); P2
+            A 3-dimensional polyhedron in QQ^3 defined as
+            the convex hull of 8 vertices
+            sage: P2.volume()
+            64
 
         Linear transformation respects backend::
 
@@ -1820,7 +1836,7 @@ class Polyhedron_base5(Polyhedron_base4):
             A 3-dimensional polyhedron in RDF^4 defined as the convex hull of 5 vertices
             sage: (1/1 * proj_mat) * b3
             A 3-dimensional polyhedron in QQ^4 defined as the convex hull of 5 vertices
-            sage: (AA(2).sqrt() * proj_mat) * b3                                        # needs sage.rings.number_field
+            sage: (AA(2).sqrt() * proj_mat) * b3
             A 3-dimensional polyhedron in AA^4 defined as the convex hull of 5 vertices
 
         Check that zero-matrices act correctly::
@@ -1862,6 +1878,11 @@ class Polyhedron_base5(Polyhedron_base4):
             True
         """
         is_injective = False
+
+        if linear_transf in self.base_ring():
+            # allow for scalar input
+            linear_transf = linear_transf * self.ambient_vector_space().matrix()
+
         if linear_transf.nrows() != 0:
             if new_base_ring:
                 R = new_base_ring
@@ -1870,26 +1891,27 @@ class Polyhedron_base5(Polyhedron_base4):
 
             # Multiplying a matrix with a vector is slow.
             # So we multiply the entire vertex matrix etc.
-            # Still we create generators, as possibly the Vrepresentation will be discarded later on.
+            # Still we create generators, as possibly the Vrepresentation
+            # will be discarded later on.
             if self.n_vertices():
-                new_vertices = ( v for v in ((linear_transf*self.vertices_matrix(R)).transpose()) )
+                new_vertices = iter((linear_transf*self.vertices_matrix(R)).transpose())
             else:
                 new_vertices = ()
             if self.n_rays():
-                new_rays = ( r for r in matrix(R, self.rays())*linear_transf.transpose() )
+                new_rays = iter(matrix(R, self.rays())*linear_transf.transpose())
             else:
                 new_rays = ()
             if self.n_lines():
-                new_lines = ( l for l in matrix(R, self.lines())*linear_transf.transpose() )
+                new_lines = iter(matrix(R, self.lines())*linear_transf.transpose())
             else:
                 new_lines = ()
 
             if self.is_compact() and self.n_vertices() and self.n_inequalities():
-                homogeneous_basis = matrix(R, ( [1] + list(v) for v in self.an_affine_basis() )).transpose()
+                homogeneous_basis = matrix(R, ([1] + list(v) for v in self.an_affine_basis())).transpose()
 
                 # To convert first to a list and then to a matrix seems to be necessary to obtain a meaningful error,
                 # in case the number of columns doesn't match the dimension.
-                new_homogeneous_basis = matrix(list( [1] + list(linear_transf*vector(R, v)) for v in self.an_affine_basis()) ).transpose()
+                new_homogeneous_basis = matrix([[1] + list(linear_transf*vector(R, v)) for v in self.an_affine_basis()]).transpose()
 
                 if self.dim() + 1 == new_homogeneous_basis.rank():
                     # The transformation is injective on the polytope.
@@ -1906,14 +1928,14 @@ class Polyhedron_base5(Polyhedron_base4):
                     # Note that such N must exist, as our map is injective on the polytope.
                     # It is uniquely defined by considering a basis of the homogeneous vertices.
                     N = new_homogeneous_basis.solve_left(homogeneous_basis)
-                    new_inequalities = ( h for h in matrix(R, self.inequalities())*N )
+                    new_inequalities = iter(matrix(R, self.inequalities())*N)
 
                     # The equations are the left kernel matrix of the homogeneous vertices
                     # or equivalently a basis thereof.
                     new_equations = (new_homogeneous_basis.transpose()).right_kernel_matrix()
 
         else:
-            new_vertices = [[] for v in self.vertex_generator() ]
+            new_vertices = [[] for v in self.vertex_generator()]
             new_rays = []
             new_lines = []
 
@@ -2072,7 +2094,7 @@ class Polyhedron_base5(Polyhedron_base4):
               A vertex at (-1/3, 1, 1),
               A vertex at (-1/3, 1, -1),
               A vertex at (-1/3, -1, -1))
-             sage: face_trunc.face_lattice().is_isomorphic(Cube.face_lattice())         # needs sage.combinat sage.graphs
+             sage: face_trunc.face_lattice().is_isomorphic(Cube.face_lattice())
              True
 
         TESTS:
@@ -2169,7 +2191,6 @@ class Polyhedron_base5(Polyhedron_base4):
             (1, 9, 16, 9, 1)
             sage: stacked_square_large = cube.stack(square_face, position=10)
 
-            sage: # needs sage.rings.number_field
             sage: hexaprism = polytopes.regular_polygon(6).prism()
             sage: hexaprism.f_vector()
             (1, 12, 18, 8, 1)
@@ -2178,7 +2199,7 @@ class Polyhedron_base5(Polyhedron_base4):
             sage: stacked_hexaprism.f_vector()
             (1, 13, 22, 11, 1)
 
-            sage: hexaprism.stack(square_face, position=4)                              # needs sage.rings.number_field
+            sage: hexaprism.stack(square_face, position=4)
             Traceback (most recent call last):
             ...
             ValueError: the chosen position is too large
@@ -2298,12 +2319,11 @@ class Polyhedron_base5(Polyhedron_base4):
 
         EXAMPLES::
 
-            sage: # needs sage.rings.number_field
             sage: P_4 = polytopes.regular_polygon(4)
             sage: W1 = P_4.wedge(P_4.faces(1)[0]); W1
             A 3-dimensional polyhedron in AA^3 defined as the convex hull of 6 vertices
             sage: triangular_prism = polytopes.regular_polygon(3).prism()
-            sage: W1.is_combinatorially_isomorphic(triangular_prism)                    # needs sage.graphs
+            sage: W1.is_combinatorially_isomorphic(triangular_prism)
             True
 
             sage: Q = polytopes.hypersimplex(4,2)
@@ -2335,9 +2355,9 @@ class Polyhedron_base5(Polyhedron_base4):
              A vertex at (0, 1, 1, 0, -1))
 
             sage: C_3_7 = polytopes.cyclic_polytope(3,7)
-            sage: P_6 = polytopes.regular_polygon(6)                                    # needs sage.rings.number_field
-            sage: W4 = P_6.wedge(P_6.faces(1)[0])                                       # needs sage.rings.number_field
-            sage: W4.is_combinatorially_isomorphic(C_3_7.polar())                       # needs sage.graphs sage.rings.number_field
+            sage: P_6 = polytopes.regular_polygon(6)
+            sage: W4 = P_6.wedge(P_6.faces(1)[0])
+            sage: W4.is_combinatorially_isomorphic(C_3_7.polar())
             True
 
         REFERENCES:
@@ -2421,7 +2441,6 @@ class Polyhedron_base5(Polyhedron_base4):
 
         EXAMPLES::
 
-            sage: # needs sage.rings.number_field
             sage: pentagon  = polytopes.regular_polygon(5)
             sage: f = pentagon.faces(1)[0]
             sage: fsplit_pentagon = pentagon.face_split(f)
@@ -2510,7 +2529,7 @@ class Polyhedron_base5(Polyhedron_base4):
 
         Check that :issue:`28725` is fixed::
 
-            sage: polytopes.regular_polygon(3)._test_lawrence()                         # needs sage.rings.number_field
+            sage: polytopes.regular_polygon(3)._test_lawrence()
 
         Check that :issue:`30293` is fixed::
 
@@ -2619,7 +2638,6 @@ class Polyhedron_base5(Polyhedron_base4):
             sage: ops_cube.f_vector()
             (1, 9, 24, 24, 9, 1)
 
-            sage: # needs sage.rings.number_field
             sage: pentagon  = polytopes.regular_polygon(5)
             sage: v = pentagon.vertices()[0]
             sage: ops_pentagon = pentagon.one_point_suspension(v)
@@ -2651,7 +2669,6 @@ class Polyhedron_base5(Polyhedron_base4):
         from sage.geometry.polyhedron.face import PolyhedronFace
         if isinstance(vertex, Vertex):
             return self.face_split(vertex)
-        elif isinstance(vertex, PolyhedronFace) and vertex.dim() == 0:
+        if isinstance(vertex, PolyhedronFace) and vertex.dim() == 0:
             return self.face_split(vertex)
-        else:
-            raise TypeError("the vertex {} should be a Vertex or PolyhedronFace of dimension 0".format(vertex))
+        raise TypeError("the vertex {} should be a Vertex or PolyhedronFace of dimension 0".format(vertex))

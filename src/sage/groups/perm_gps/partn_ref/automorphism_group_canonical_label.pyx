@@ -118,10 +118,9 @@ from sage.data_structures.bitset_base cimport *
 cdef inline int agcl_cmp(int a, int b) noexcept:
     if a < b:
         return -1
-    elif a == b:
+    if a == b:
         return 0
-    else:
-        return 1
+    return 1
 
 # Functions
 
@@ -308,7 +307,7 @@ cdef aut_gp_and_can_lab *allocate_agcl_output(int n) noexcept:
     output.relabeling = <int *> sig_malloc(n*sizeof(int))
     output.generators = <int *> sig_malloc(2*n*n*sizeof(int))
     output.size_of_generator_array = 2*n*n
-    if output.group      is NULL or \
+    if output.group is NULL or \
        output.relabeling is NULL or \
        output.generators is NULL:
         deallocate_agcl_output(output)

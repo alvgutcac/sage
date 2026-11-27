@@ -1,4 +1,3 @@
-# sage_setup: distribution = sagemath-objects
 """
 Coerce actions
 """
@@ -214,8 +213,7 @@ def detect_element_action(Parent X, Y, bint X_on_left, X_el=None, Y_el=None):
     if y is None:
         if isinstance(Y, Parent):
             raise RuntimeError("an_element() for %s returned None" % Y)
-        else:
-            return # don't know how to make elements of this type...
+        return # don't know how to make elements of this type...
 
     # element x defining _lmul_ or _rmul_
     if isinstance(x, ModuleElement) and isinstance(y, Element):
@@ -684,7 +682,7 @@ cdef class IntegerAction(Action):
 
     - ``Z`` -- a type or parent representing integers
 
-    For the other arguments, see :class:`Action`.
+    For the other arguments, see :class:`~sage.categories.action.Action`.
 
     .. NOTE::
 
@@ -759,7 +757,7 @@ cdef class IntegerMulAction(IntegerAction):
     def __init__(self, Z, M, is_left=True, m=None):
         if m is None:
             m = M.an_element()
-        test = m + (-m)  # make sure addition and negation is allowed
+        _ = m + (-m)  # make sure addition and negation is allowed
         super().__init__(Z, M, is_left, operator.mul)
 
     cpdef _act_(self, nn, a):

@@ -71,8 +71,9 @@ AUTHORS:
 from sage.arith.misc import kronecker, next_prime
 from sage.categories.fields import Fields
 from sage.matrix.matrix_space import MatrixSpace
+from sage.misc.cachefunc import cached_method
 from sage.misc.lazy_import import lazy_import
-from sage.modular.arithgroup.all import Gamma0
+from sage.modular.arithgroup.congroup_gamma0 import Gamma0_constructor as Gamma0
 from sage.modular.hecke.module import HeckeModule_free_module
 from sage.rings.finite_rings.finite_field_constructor import FiniteField
 from sage.rings.integer import Integer
@@ -290,74 +291,91 @@ def supersingular_D(prime):
         D -= 1
 
 
-def supersingular_j(FF):
+def supersingular_j(FF, *, all=False):
     r"""
     Return a supersingular j-invariant over the finite
     field FF.
 
     INPUT:
 
-    - ``FF`` -- finite field with p^2 elements, where p is a prime number
+    - ``FF`` -- finite field
+    - ``all`` -- boolean; whether to return a single supersingular
+      j-invariant or a list of all supersingular j-invariants in ``FF``
 
     OUTPUT:
 
     - finite field element -- a supersingular j-invariant
-      defined over the finite field FF
+      defined over the finite field ``FF``, or a list of
+      all supersingular j-invariants defined over ``FF``
 
     EXAMPLES:
 
     The following examples calculate supersingular j-invariants for a
     few finite fields::
 
-        sage: supersingular_j(GF(7^2, 'a'))
+        sage: supersingular_j(GF(7^2))
         6
-
-    Observe that in this example the j-invariant is not defined over
-    the prime field::
-
-        sage: supersingular_j(GF(15073^2, 'a'))
-        4443*a + 13964
-        sage: supersingular_j(GF(83401^2, 'a'))
+        sage: supersingular_j(GF(83401^2))
         67977
+
+    This example used to not work (see :issue:`42534`)::
+
+        sage: supersingular_j(GF(15073))
+        5408
+
+    We can compute all supersingular j-invariants using the ``all`` parameter::
+
+        sage: supersingular_j(GF(419), all=True)
+        [407, 396, 368, 367, 356, 354, 308, 288, 274, 184, 180, 106, 98, 62, 48, 13]
+        sage: supersingular_j(GF(419^2), all=True)
+        [407, 396, 368, 367, 356, 354, 308, 288, 274, 184, 180, 106, 98, 62, 48, 13,
+         289*z2 + 398, 51*z2 + 386, 245*z2 + 327, 318*z2 + 268, 166*z2 + 268, 130*z2 + 268,
+         265*z2 + 243, 297*z2 + 241, 101*z2 + 167, 174*z2 + 153, 350*z2 + 140, 122*z2 + 119,
+         154*z2 + 89, 69*z2 + 71, 418*z2 + 29, z2 + 28, 368*z2 + 18, 253*z2 + 15]
 
     AUTHORS:
 
     - David Kohel -- kohel@maths.usyd.edu.au
-
     - Iftikhar Burhanuddin -- burhanud@usc.edu
     """
     if FF not in Fields().Finite():
-        raise ValueError("%s is not a finite field" % FF)
+        raise ValueError(f'{FF} is not a finite field')
     prime = FF.characteristic()
-    if not Integer(prime).is_prime():
-        raise ValueError("%s is not a prime" % prime)
-    if FF.cardinality() != Integer(prime**2):
-        raise ValueError("%s is not a quadratic extension" % FF)
-    if kronecker(-1, prime) != 1:
-        j_invss = 1728                 # (2^2 * 3)^3
-    elif kronecker(-2, prime) != 1:
-        j_invss = 8000                 # (2^2 * 5)^3
-    elif kronecker(-3, prime) != 1:
-        j_invss = 0                    # 0^3
-    elif kronecker(-7, prime) != 1:
-        j_invss = 16581375             # (3 * 5 * 17)^3
-    elif kronecker(-11, prime) != 1:
-        j_invss = -32768               # -(2^5)^3
-    elif kronecker(-19, prime) != 1:
-        j_invss = -884736              # -(2^5 * 3)^3
-    elif kronecker(-43, prime) != 1:
-        j_invss = -884736000           # -(2^6 * 3 * 5)^3
-    elif kronecker(-67, prime) != 1:
-        j_invss = -147197952000        # -(2^5 * 3 * 5 * 11)^3
-    elif kronecker(-163, prime) != 1:
-        j_invss = -262537412640768000  # -(2^6 * 3 * 5 * 23 * 29)^3
-    else:
-        D = supersingular_D(prime)
-        hc_poly = FF['x'](pari(D).polclass())
-        root_hc_poly_list = list(hc_poly.roots())
-
-        j_invss = root_hc_poly_list[0][0]
-    return FF(j_invss)
+    if not all:
+        if kronecker(-1, prime) != 1:
+            j_invss = 1728                 # (2^2 * 3)^3
+        elif kronecker(-2, prime) != 1:
+            j_invss = 8000                 # (2^2 * 5)^3
+        elif kronecker(-3, prime) != 1:
+            j_invss = 0                    # 0^3
+        elif kronecker(-7, prime) != 1:
+            j_invss = 16581375             # (3 * 5 * 17)^3
+        elif kronecker(-11, prime) != 1:
+            j_invss = -32768               # -(2^5)^3
+        elif kronecker(-19, prime) != 1:
+            j_invss = -884736              # -(2^5 * 3)^3
+        elif kronecker(-43, prime) != 1:
+            j_invss = -884736000           # -(2^6 * 3 * 5)^3
+        elif kronecker(-67, prime) != 1:
+            j_invss = -147197952000        # -(2^5 * 3 * 5 * 11)^3
+        elif kronecker(-163, prime) != 1:
+            j_invss = -262537412640768000  # -(2^6 * 3 * 5 * 23 * 29)^3
+        else:
+            if FF.absolute_degree() % 2:
+                # stronger condition than supersingular_D() to ensure a curve over GF(p)
+                from sage.arith.misc import hilbert_conductor
+                D = -ZZ.one()
+                while hilbert_conductor(D, -prime) != prime:
+                    D -= 1
+            else:
+                D = supersingular_D(prime)
+            from sage.schemes.elliptic_curves.cm import hilbert_class_polynomial
+            hc_poly = hilbert_class_polynomial(D).change_ring(FF)
+            root_hc_poly_list = hc_poly.roots(multiplicities=False)
+            j_invss = root_hc_poly_list[0]
+        return FF(j_invss)
+    from sage.schemes.elliptic_curves.ell_finite_field import supersingular_j_polynomial
+    return supersingular_j_polynomial(prime).roots(ring=FF, multiplicities=False)
 
 
 @richcmp_method
@@ -488,6 +506,7 @@ class SupersingularModule(HeckeModule_free_module):
         """
         return ZZ**self.dimension()
 
+    @cached_method
     def dimension(self):
         r"""
         Return the dimension of the space of modular forms of weight 2
@@ -523,16 +542,10 @@ class SupersingularModule(HeckeModule_free_module):
 
         - Iftikhar Burhanuddin -- burhanud@usc.edu
         """
-        try:
-            return self.__dimension
-        except AttributeError:
-            pass
         if self.__level == 1:
             G = Gamma0(self.__prime)
-            self.__dimension = G.dimension_modular_forms(2)
-        else:
-            raise NotImplementedError
-        return self.__dimension
+            return G.dimension_modular_forms(2)
+        raise NotImplementedError
 
     rank = dimension
 
@@ -608,6 +621,7 @@ class SupersingularModule(HeckeModule_free_module):
         """
         return 2
 
+    @cached_method
     def supersingular_points(self):
         r"""
         Compute the supersingular j-invariants over the
@@ -648,10 +662,6 @@ class SupersingularModule(HeckeModule_free_module):
 
         - Iftikhar Burhanuddin -- burhanud@usc.edu
         """
-        try:
-            return (self._ss_points_dic, self._ss_points)
-        except AttributeError:
-            pass
         Fp2 = self.__finite_field
         level = self.__level
         prime = Fp2.characteristic()

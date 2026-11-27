@@ -419,7 +419,7 @@ cdef class NumberFieldElement_quadratic(NumberFieldElement_absolute):
         """
         Used for pickling.
 
-        TESTS:
+        TESTS::
 
             sage: x = polygen(ZZ, 'x')
             sage: K.<a> = NumberField(x^2 - 13)
@@ -437,6 +437,23 @@ cdef class NumberFieldElement_quadratic(NumberFieldElement_absolute):
         return __make_NumberFieldElement_quadratic1, (self._parent, type(self), a, b, denom)
 
     cdef int _randomize(self, num_bound, den_bound, distribution) except -1:
+        """
+        TESTS::
+
+            sage: a = ZZ.random_element(-100, 100)
+            sage: while a.is_square():
+            ....:     a = ZZ.random_element(-100, 100)
+            sage: K = QuadraticField(a)
+            sage: K.random_element().parent() is K  # indirect doctest
+            True
+            sage: len(set(K.random_element() for _ in range(100))) >= 40
+            True
+
+        Verify that :issue:`30017` is fixed::
+
+            sage: all(K.random_element().is_integral() for s in range(100))
+            False
+        """
         cdef Integer temp, denom1, denom2
 
         # in theory, we could just generate two random numerators and
@@ -447,17 +464,20 @@ cdef class NumberFieldElement_quadratic(NumberFieldElement_absolute):
         # of the random element code, it's worth doing slightly more
         # work to make this possible.
 
-        # normalize denominator bound
-        if den_bound is None or den_bound < 1:
-            den_bound = 1
-
         # generate denominators
-        denom1 = <Integer>(ZZ.random_element(x=1,
-                                             y=den_bound+1,
-                                             distribution=distribution))
-        denom2 = <Integer>(ZZ.random_element(x=1,
-                                             y=den_bound+1,
-                                             distribution=distribution))
+        if den_bound is None:
+            denom1 = <Integer>(1 + abs(ZZ.random_element(distribution=distribution)))
+            denom2 = <Integer>(1 + abs(ZZ.random_element(distribution=distribution)))
+        else:
+            # normalize denominator bound
+            if den_bound < 1:
+                den_bound = 1
+            denom1 = <Integer>(ZZ.random_element(x=1,
+                                                 y=den_bound+1,
+                                                 distribution=distribution))
+            denom2 = <Integer>(ZZ.random_element(x=1,
+                                                 y=den_bound+1,
+                                                 distribution=distribution))
 
         # set a, b
         temp = <Integer>(ZZ.random_element(x=num_bound, distribution=distribution))
@@ -984,7 +1004,6 @@ cdef class NumberFieldElement_quadratic(NumberFieldElement_absolute):
             sage: (-a-2).sign()
             -1
 
-            sage: # needs sage.symbolic
             sage: x = polygen(ZZ, 'x')
             sage: K.<b> = NumberField(x^2 + 2*x + 7, 'b', embedding=CC(-1,-sqrt(6)))
             sage: b.sign()
@@ -1695,11 +1714,11 @@ cdef class NumberFieldElement_quadratic(NumberFieldElement_absolute):
             sage: (a+1/2-a)._integer_()
             Traceback (most recent call last):
             ...
-            TypeError: Unable to coerce 1/2 to an integer
+            TypeError: no conversion of this number field element to an integer
         """
         cdef Integer res
         if mpz_cmp_ui(self.b, 0) != 0 or mpz_cmp_ui(self.denom, 1) != 0:
-            raise TypeError("Unable to coerce %s to an integer" % self)
+            raise TypeError(f"no conversion of this number field element to an integer")
         else:
             res = Integer.__new__(Integer)
             mpz_set(res.value, self.a)
@@ -1716,11 +1735,11 @@ cdef class NumberFieldElement_quadratic(NumberFieldElement_absolute):
             sage: (a+1/2)._rational_()
             Traceback (most recent call last):
             ...
-            TypeError: Unable to coerce a + 1/2 to a rational
+            TypeError: no conversion of this number field element to a rational
         """
         cdef Rational res
-        if mpz_cmp_ui(self.b, 0)!=0:
-            raise TypeError("Unable to coerce %s to a rational" % self)
+        if mpz_cmp_ui(self.b, 0) != 0:
+            raise TypeError("no conversion of this number field element to a rational")
         else:
             res = <Rational>Rational.__new__(Rational)
             mpz_set(mpq_numref(res.value), self.a)
@@ -2399,12 +2418,11 @@ cdef class NumberFieldElement_quadratic(NumberFieldElement_absolute):
         test = 2 * (self - n)
         if test < 1:
             return n
-        elif test > 1:
+        if test > 1:
             return n + 1
-        elif n % 2 == 0:
+        if n % 2 == 0:
             return n
-        else:
-            return n + 1
+        return n + 1
 
 
 cdef class NumberFieldElement_quadratic_sqrt(NumberFieldElement_quadratic):
