@@ -1,4 +1,3 @@
-# sage_setup: distribution = sagemath-repl
 r"""
 Sage's IPython Extension
 
@@ -64,14 +63,14 @@ In contrast, input to the ``%time`` magic command is preparsed::
     sage: shell.quit()
 """
 
-from IPython.core.magic import Magics, magics_class, line_magic, cell_magic
 from IPython.core.display import HTML
 from IPython.core.getipython import get_ipython
+from IPython.core.magic import Magics, cell_magic, line_magic, magics_class
 
-from sage.repl.load import load_wrap
 from sage.env import SAGE_IMPORTALL, SAGE_STARTUP_FILE
 from sage.misc.lazy_import import LazyImport
 from sage.misc.misc import run_once
+from sage.repl.load import load_wrap
 
 
 def _running_in_notebook():
@@ -191,7 +190,7 @@ class SageMagics(Magics):
         .. NOTE::
 
             Currently, this cannot be completely doctested as it
-            relies on :func:`raw_input`.
+            relies on ``raw_input``.
 
         EXAMPLES::
 
@@ -241,8 +240,8 @@ class SageMagics(Magics):
         That means you do not have to use :func:`ascii_art` to get an ASCII art
         output::
 
-            sage: shell.run_cell("i = var('i')")                                        # needs sage.symbolic
-            sage: shell.run_cell('sum(i^2*x^i, i, 0, 10)')                              # needs sage.symbolic
+            sage: shell.run_cell("i = var('i')")
+            sage: shell.run_cell('sum(i^2*x^i, i, 0, 10)')
                  10       9       8       7       6       5       4      3      2
             100*x   + 81*x  + 64*x  + 49*x  + 36*x  + 25*x  + 16*x  + 9*x  + 4*x  + x
 
@@ -250,14 +249,14 @@ class SageMagics(Magics):
 
             sage: shell.run_cell('%display text plain')
             sage: shell.run_cell('%display plain')        # shortcut for "text plain"
-            sage: shell.run_cell('sum(i^2*x^i, i, 0, 10)')                              # needs sage.symbolic
+            sage: shell.run_cell('sum(i^2*x^i, i, 0, 10)')
             100*x^10 + 81*x^9 + 64*x^8 + 49*x^7 + 36*x^6 + 25*x^5 + 16*x^4 + 9*x^3 + 4*x^2 + x
 
         Sometime you could have to use a special output width and you
         could specify it::
 
             sage: shell.run_cell('%display ascii_art')
-            sage: shell.run_cell('StandardTableaux(4).list()')                          # needs sage.combinat
+            sage: shell.run_cell('StandardTableaux(4).list()')
             [
             [                                                                  1  4    1  3
             [                 1  3  4    1  2  4    1  2  3    1  3    1  2    2       2
@@ -268,7 +267,7 @@ class SageMagics(Magics):
                3       3 ]
                4   ,   4 ]
             sage: shell.run_cell('%display ascii_art 50')
-            sage: shell.run_cell('StandardTableaux(4).list()')                          # needs sage.combinat
+            sage: shell.run_cell('StandardTableaux(4).list()')
             [
             [
             [                 1  3  4    1  2  4    1  2  3
@@ -321,7 +320,7 @@ class SageMagics(Magics):
             if max_width <= 0:
                 raise ValueError(
                     "max width must be a positive integer")
-            import sage.typeset.character_art as character_art
+            from sage.typeset import character_art
             character_art.MAX_WIDTH = max_width
             dm.preferences.text = arg0
         # Unset all
@@ -393,7 +392,6 @@ class SageMagics(Magics):
 
         EXAMPLES::
 
-            sage: # needs sage.misc.cython
             sage: from sage.repl.interpreter import get_test_shell
             sage: shell = get_test_shell()
             sage: shell.run_cell(
@@ -411,7 +409,6 @@ class SageMagics(Magics):
 
         Test unrecognized arguments::
 
-            sage: # needs sage.misc.cython
             sage: shell.run_cell('''
             ....: %%cython --some-unrecognized-argument
             ....: print(1)
@@ -420,7 +417,6 @@ class SageMagics(Magics):
 
         Test ``--help`` is disabled::
 
-            sage: # needs sage.misc.cython
             sage: shell.run_cell('''
             ....: %%cython --help
             ....: print(1)
@@ -429,7 +425,6 @@ class SageMagics(Magics):
 
         Test ``--view-annotate`` invalid arguments::
 
-            sage: # needs sage.misc.cython
             sage: shell.run_cell('''
             ....: %%cython --view-annotate=xx
             ....: print(1)
@@ -439,7 +434,6 @@ class SageMagics(Magics):
         Test ``--view-annotate=displayhtml`` (note that in a notebook environment
         an inline HTML frame will be displayed)::
 
-            sage: # needs sage.misc.cython
             sage: shell.run_cell('''
             ....: %%cython --view-annotate=displayhtml
             ....: print(1)
@@ -449,7 +443,7 @@ class SageMagics(Magics):
 
         Test ``--view-annotate=webbrowser``::
 
-            sage: # needs sage.misc.cython webbrowser
+            sage: # needs webbrowser
             sage: shell.run_cell('''
             ....: %%cython --view-annotate
             ....: print(1)
@@ -468,7 +462,6 @@ class SageMagics(Magics):
 
         Test invalid quotes::
 
-            sage: # needs sage.misc.cython
             sage: shell.run_cell('''
             ....: %%cython --a='
             ....: print(1)
@@ -478,9 +471,10 @@ class SageMagics(Magics):
             ...
             ValueError: No closing quotation
         """
-        from sage.misc.cython import cython_compile
-        import shlex
         import argparse
+        import shlex
+
+        from sage.misc.cython import cython_compile
 
         class ExitCatchingArgumentParser(argparse.ArgumentParser):
             def error(self, message):
@@ -524,7 +518,7 @@ class SageMagics(Magics):
         Fortran cell magic.
 
         This is syntactic sugar on the
-        :func:`~sage.misc.inline_fortran.fortran` function.
+        :class:`~sage.misc.inline_fortran.InlineFortran` callable.
 
         INPUT:
 
@@ -616,10 +610,7 @@ class SageCustomizations:
             sage: SageCustomizations.all_globals()
             <module 'sage.all_cmdline' ...>
         """
-        try:
-            from sage import all_cmdline
-        except ImportError:
-            from sage import all__sagemath_repl as all_cmdline
+        from sage import all_cmdline
         return all_cmdline
 
     def init_environment(self):
@@ -651,6 +642,7 @@ class SageCustomizations:
         IPython.core.oinspect.getsource = LazyImport("sage.misc.sagedoc", "my_getsource")
         IPython.core.oinspect.find_file = LazyImport("sage.misc.sageinspect", "sage_getfile")
         IPython.core.oinspect.getargspec = LazyImport("sage.misc.sageinspect", "sage_getargspec")
+        IPython.core.oinspect.signature = LazyImport("sage.misc.sageinspect", "sage_signature")  # pyright: ignore [reportPrivateImportUsage]
 
     def init_line_transforms(self):
         """
@@ -660,12 +652,13 @@ class SageCustomizations:
 
         Check that :issue:`31951` is fixed::
 
+             sage: # indirect doctest
              sage: from IPython import get_ipython
              sage: ip = get_ipython()
-             sage: ip.input_transformer_manager.check_complete('''  # indirect doctest
+             sage: ip.input_transformer_manager.check_complete('''
              ....: for i in [1 .. 2]:
              ....:     a = 2''')
-             ('incomplete', 2)
+             ('incomplete', 4)
              sage: ip.input_transformer_manager.check_complete('''
              ....: def foo(L)
              ....:     K.<a> = L''')
@@ -701,7 +694,8 @@ class SageCustomizations:
              ('incomplete', 4)
         """
         from IPython.core.inputtransformer2 import TransformerManager
-        from .interpreter import SagePromptTransformer, SagePreparseTransformer
+
+        from sage.repl.interpreter import SagePreparseTransformer, SagePromptTransformer
 
         self.shell.input_transformer_manager.cleanup_transforms.insert(1, SagePromptTransformer)
         self.shell.input_transformers_post.append(SagePreparseTransformer)

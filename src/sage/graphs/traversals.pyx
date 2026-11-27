@@ -1,4 +1,3 @@
-# cython: binding=True
 # distutils: language = c++
 r"""
 Graph traversals
@@ -61,7 +60,6 @@ Methods
 
 from collections import deque
 
-from libc.string cimport memset
 from libc.stdint cimport uint32_t
 from libcpp.vector cimport vector
 from cysignals.signals cimport sig_on, sig_off
@@ -73,7 +71,6 @@ from sage.graphs.base.static_sparse_backend cimport StaticSparseCGraph
 from sage.graphs.base.static_sparse_backend cimport StaticSparseBackend
 from sage.graphs.base.static_sparse_graph cimport init_short_digraph
 from sage.graphs.base.static_sparse_graph cimport free_short_digraph
-from sage.graphs.base.static_sparse_graph cimport out_degree
 from sage.graphs.graph_decompositions.slice_decomposition cimport \
         extended_lex_BFS
 
@@ -400,7 +397,6 @@ def lex_BFS(G, reverse=False, tree=False, initial_vertex=None, algorithm="fast")
 
     Different orderings for different traversals::
 
-        sage: # needs sage.combinat
         sage: G = digraphs.DeBruijn(2,3)
         sage: G.lex_BFS(initial_vertex='000', algorithm='fast')
         ['000', '001', '100', '010', '011', '110', '101', '111']
@@ -463,6 +459,14 @@ def lex_BFS(G, reverse=False, tree=False, initial_vertex=None, algorithm="fast")
         Traceback (most recent call last):
         ...
         ValueError: 'foo' is not a graph vertex
+
+    Check that :issue:`39934` is fixed::
+
+        sage: G = Graph(1, immutable=True)
+        sage: G.lex_BFS(algorithm='slow')
+        [0]
+        sage: G.lex_BFS(algorithm='fast')
+        [0]
     """
     if initial_vertex is not None and initial_vertex not in G:
         raise ValueError(f"'{initial_vertex}' is not a graph vertex")
@@ -473,22 +477,15 @@ def lex_BFS(G, reverse=False, tree=False, initial_vertex=None, algorithm="fast")
     if algorithm != "fast":
         raise ValueError(f"unknown algorithm '{algorithm}'")
 
-    cdef size_t n = G.order()
-
     # For algorithm "fast" we need to convert G to an undirected graph
     if G.is_directed():
         G = G.to_undirected()
 
-    # Initialize variables needed by the fast and slow algorithms
+    # Initialize variables needed by the fast algorithm
     cdef CGraphBackend Gbackend = <CGraphBackend> G._backend
     cdef CGraph cg = Gbackend.cg()
-    cdef list sigma = []
-    cdef dict predecessor = {}
-    # Initialize variables needed by the fast algorithm
     cdef vector[int] sigma_int
     cdef vector[int] pred
-    # Initialize variables needed by the slow algorithm
-    cdef dict lexicographic_label
     # Temporary variables
     cdef int vi, i, initial_v_int
 
@@ -498,16 +495,26 @@ def lex_BFS(G, reverse=False, tree=False, initial_vertex=None, algorithm="fast")
         initial_v_int = Gbackend.get_vertex(initial_vertex)
     else:
         initial_v_int = -1
-    extended_lex_BFS(cg, sigma_int, NULL, initial_v_int, &pred, NULL, NULL)
-    sigma = [ Gbackend.vertex_label(vi) for vi in sigma_int ]
-    predecessor = { u: sigma[i] for u, i in zip(sigma, pred) if i != -1 }
+    if tree:
+        # We need the predecessors for extracting tree edges
+        sig_on()
+        extended_lex_BFS(cg, sigma_int, NULL, initial_v_int, &pred, NULL, NULL)
+        sig_off()
+    else:
+        sig_on()
+        extended_lex_BFS(cg, sigma_int, NULL, initial_v_int, NULL, NULL, NULL)
+        sig_off()
+    cdef list sigma = [Gbackend.vertex_label(vi) for vi in sigma_int]
+    cdef list edges
+    if tree:
+        # Build the list of edges
+        edges = [(u, sigma[i]) for u, i in zip(sigma, pred) if i != -1]
 
     if reverse:
         sigma.reverse()
 
     if tree:
         from sage.graphs.digraph import DiGraph
-        edges = predecessor.items()
         g = DiGraph([G, edges], format='vertices_and_edges', sparse=True)
         return sigma, g
     return sigma
@@ -572,7 +579,6 @@ def lex_UP(G, reverse=False, tree=False, initial_vertex=None):
 
     Different orderings for different traversals::
 
-        sage: # needs sage.combinat
         sage: G = digraphs.DeBruijn(2,3)
         sage: G.lex_BFS(initial_vertex='000')
         ['000', '001', '100', '010', '011', '110', '101', '111']
@@ -645,7 +651,6 @@ def lex_DFS(G, reverse=False, tree=False, initial_vertex=None):
 
     Different orderings for different traversals::
 
-        sage: # needs sage.combinat
         sage: G = digraphs.DeBruijn(2,3)
         sage: G.lex_BFS(initial_vertex='000')
         ['000', '001', '100', '010', '011', '110', '101', '111']
@@ -718,7 +723,6 @@ def lex_DOWN(G, reverse=False, tree=False, initial_vertex=None):
 
     Different orderings for different traversals::
 
-        sage: # needs sage.combinat
         sage: G = digraphs.DeBruijn(2,3)
         sage: G.lex_BFS(initial_vertex='000')
         ['000', '001', '100', '010', '011', '110', '101', '111']
@@ -1031,7 +1035,7 @@ def lex_M_slow(G, triangulation=False, labels=False, initial_vertex=None):
 
             # We check if there is a chain u = w_1, w_2, ..., w_{p+1} = v with
             # w_j unnumbered and label(w_j) < label(v) for all j in {2, ..., p}
-            active = set([w for w in unnumbered_vertices if label[w] < label[v]])
+            active = {w for w in unnumbered_vertices if label[w] < label[v]}
             active.add(v)
             reach = set([u])
             while active and reach and v not in reach:
@@ -1048,9 +1052,9 @@ def lex_M_slow(G, triangulation=False, labels=False, initial_vertex=None):
 
     if triangulation and labels:
         return alpha, label, F
-    elif triangulation:
+    if triangulation:
         return alpha, F
-    elif labels:
+    if labels:
         return alpha, label
     return alpha
 
@@ -1424,7 +1428,10 @@ def maximum_cardinality_search(G, reverse=False, tree=False, initial_vertex=None
 
     Immutable graphs;:
 
-        sage: G = graphs.RandomGNP(10, .7)
+        sage: while True:
+        ....:     G = graphs.RandomGNP(10, .7)
+        ....:     if G.is_connected():  # algorithm only available for connected graphs
+        ....:         break
         sage: G._backend
         <sage.graphs.base.sparse_graph.SparseGraphBackend ...>
         sage: H = Graph(G, immutable=True)
@@ -1867,3 +1874,52 @@ def maximum_cardinality_search_M(G, initial_vertex=None):
     return ([int_to_vertex[alpha[u]] for u in range(N)],
             [(int_to_vertex[u], int_to_vertex[v]) for u, v in F],
             [int_to_vertex[u] for u in range(N) if X[u]])
+
+
+def BFS_with_condition(G, v, condition, backward=False):
+    """
+    Perform a breadth-first-search under condition.
+
+    This returns an iterator over edges between the
+    allowed vertices. Some of these edges are traversed forward
+    during the search, but others are yielded but not traversed
+    when the target vertex has already been met.
+
+    INPUT:
+
+    - ``G`` -- a simple DiGraph without loops
+
+    - ``v`` -- a vertex of ``G`` ; the vertex ``v`` is assumed to
+      satisfy the condition
+
+    - ``condition`` -- a condition on vertices for them to be accepted
+
+    - ``backward`` -- optional boolean (default ``False``) whether to
+      move backwards along the edges
+
+    EXAMPLES::
+
+        sage: from sage.graphs.traversals import BFS_with_condition
+        sage: dg = DiGraph([[0,1],[1,3],[0,2],[2,3]])
+        sage: list(BFS_with_condition(dg, 0, lambda x: not x % 2))
+        [(0, 2)]
+
+    .. NOTE:: This code was kindly provided by Nathann Cohen.
+    """
+    neigh = G.neighbor_in_iterator if backward else G.neighbor_out_iterator
+    good_neighbors = [u for u in neigh(v)
+                      if condition(u)]
+    seen = set([v] + good_neighbors)
+    next_layer = [(v, u) for u in good_neighbors]
+    while next_layer:
+        yield from next_layer
+        next_next_layer = []
+        for _, w in next_layer:
+            for u in neigh(w):
+                if u in seen:
+                    yield (w, u)
+                    continue
+                if condition(u):
+                    seen.add(u)
+                    next_next_layer.append((w, u))
+        next_layer = next_next_layer
